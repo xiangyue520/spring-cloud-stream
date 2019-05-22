@@ -1,0 +1,24 @@
+server:
+  port: 9081
+spring:
+  cloud:
+    stream:
+      bindings:
+        input:
+          binder: activemq #当项目中存在多个消息中间件：activemq、kafka，必须指定要绑定哪一个中间件
+          destination: custom-destination
+          group: hello
+  appliction:
+    name: sc-activemq
+  activemq:
+    broker-url: tcp://localhost:61616
+    in-memory: true
+    user: admin
+    password: admin
+    pool:
+      enabled: true
+      max-connections: 50
+      expiry-timeout: 10000
+      idle-timeout: 30000
+  jms:
+    pub-sub-domain: true #默认情况下activemq提供的是queue模式，若要使用topic模式需要配置pub-sub-domain为true

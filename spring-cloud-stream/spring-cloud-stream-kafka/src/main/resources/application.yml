@@ -1,0 +1,37 @@
+spring:
+  cloud:
+    stream:
+      bindings:
+        myuser:
+          destination: my_destination1
+          group: mygroup1
+          binder: my_binder_kafka
+        hrssorder:
+          destination: my_destination1
+          group: mygroup1
+          binder: my_binder_kafka
+        input:
+          destination: my_destination
+          group: mygroup
+          binder: my_binder_kafka
+        output: #注意此处是output
+          destination: my_destination
+          group: mygroup
+          binder: my_binder_kafka #如果需要更换其他中间件，只需要更换binders下相应的binder或者对应binder下的相关配置即可
+#          producer:
+#            partition-key-expression: headers['partitionKey']
+#            partition-count: 12
+      binders:
+        my_binder_kafka: #kafka的配置
+          type: kafka #中间件类型为kafka,rabbit
+          environment:
+            spring:
+              cloud:
+                stream:
+                  kafka:
+                    binder:
+                      zk-nodes: localhost:2181
+                      brokers: localhost:9092
+        #                      其他配置
+server:
+  port: 8082
