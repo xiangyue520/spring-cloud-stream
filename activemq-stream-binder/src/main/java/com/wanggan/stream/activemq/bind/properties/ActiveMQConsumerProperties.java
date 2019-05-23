@@ -4,6 +4,8 @@
  */
 package com.wanggan.stream.activemq.bind.properties;
 
+import javax.jms.Session;
+
 /**
  * @author wanggan@yinhai.com
  * @version 1.0
@@ -22,6 +24,12 @@ public class ActiveMQConsumerProperties {
     
     private boolean transacted;
     
+    private int acknowledgeMode = Session.AUTO_ACKNOWLEDGE;
+    /**
+     * true为发布订阅模式
+     */
+    private boolean pubSubDomain = true;
+    
     public Boolean getEnabled() {
         return enabled;
     }
@@ -36,5 +44,29 @@ public class ActiveMQConsumerProperties {
     
     public void setDlqName(String dlqName) {
         this.dlqName = dlqName;
+    }
+    
+    public boolean isTransacted() {
+        return transacted;
+    }
+    
+    public void setTransacted(boolean transacted) {
+        this.transacted = transacted;
+    }
+    
+    public int getAcknowledgeMode() {
+        return acknowledgeMode;
+    }
+    
+    public void setAcknowledgeMode(int acknowledgeMode) {
+        this.acknowledgeMode = acknowledgeMode;
+    }
+    
+    public boolean isPubSubDomain() {
+        return pubSubDomain;
+    }
+    
+    public void setPubSubDomain(boolean pubSubDomain) {
+        this.pubSubDomain = pubSubDomain;
     }
 }

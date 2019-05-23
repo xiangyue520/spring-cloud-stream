@@ -1,6 +1,10 @@
 spring:
   cloud:
     stream:
+      kafka.bindings.input.consumer:
+        autoCommitOffset: false
+        enable-dlq: true
+        dlqName: errorChannel
       default-binder: my_binder_kafka
       bindings:
         input:

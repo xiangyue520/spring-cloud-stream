@@ -9,9 +9,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.annotation.StreamListener;
 import org.springframework.cloud.stream.messaging.Processor;
-import org.springframework.kafka.support.Acknowledgment;
-import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
+
+import com.wanggan.stream.common.message.MQObject;
 
 /**
  * @author wanggan@yinhai.com
@@ -27,40 +27,35 @@ public class ClientKafkaApplication {
         SpringApplication.run(ClientKafkaApplication.class, args);
     }
     
-//    @StreamListener(Processor.INPUT)
-//    public void listen(@Payload String in, @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition) {
-//        System.out.println(in + " received from partition " + partition);
-//    }
-//
+    /**
+     * 自动确认消息
+     * @param message
+     */
     @StreamListener(Processor.INPUT)
-    public void process(Message<?> message) {
-        System.out.println(message.getPayload());
-        Acknowledgment acknowledgment = message.getHeaders().get(KafkaHeaders.ACKNOWLEDGMENT, Acknowledgment.class);
-        if (acknowledgment != null) {
-            System.out.println("Acknowledgment provided");
-            acknowledgment.acknowledge();
-        }
+    public void listen(Message<MQObject> message) {
+        System.out.println("kafka content:"+message.getPayload().getContent());
     }
     
+//    /**
+//     * 手动确认消息,配置文件见application-kafka-manual.yml
+//     * @param message
+//     */
 //    @StreamListener(Processor.INPUT)
-//    @SendTo(Processor.OUTPUT)
-//    public String process(String message) {
-//        System.out.println("receive kafka message:"+message);
-//        return "i have receive msg,this is callback msg";
-//    }
-    
-    
-//    @StreamListener("myuser")
-//    public void process1(String message) {
-//        System.out.println("receive order message:"+message);
-//    }
-
-//    @StreamListener(Sink.INPUT)
-//    public void process(Message<?> message) {
+//    public void process(Message<MQObject<String>> message) {
+//
+//        System.out.println("kafka manual confirm msg:"+message.getPayload().getContent());
 //        Acknowledgment acknowledgment = message.getHeaders().get(KafkaHeaders.ACKNOWLEDGMENT, Acknowledgment.class);
 //        if (acknowledgment != null) {
 //            System.out.println("Acknowledgment provided");
 //            acknowledgment.acknowledge();
 //        }
 //    }
+    
+    @StreamListener("errorChannel")
+    public void error(Message<?> message) {
+        System.out.println("kafka error");
+        System.out.println("body="+message.getPayload());
+        System.out.println("header " + message.getHeaders());
+    }
+    
 }

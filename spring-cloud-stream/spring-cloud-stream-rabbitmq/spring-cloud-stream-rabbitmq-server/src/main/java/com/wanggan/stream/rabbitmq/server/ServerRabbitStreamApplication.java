@@ -26,4 +26,7 @@ public class ServerRabbitStreamApplication {
 //        template.convertAndSend("rabbitmq","rabbitmq.hello","hello world");
 //        template.convertAndSend("input","input.hello","hello world");
     }
+    
+
+    
 }

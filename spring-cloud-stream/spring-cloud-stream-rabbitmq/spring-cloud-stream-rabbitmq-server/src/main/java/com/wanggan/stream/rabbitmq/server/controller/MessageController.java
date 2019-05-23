@@ -11,6 +11,7 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.wanggan.stream.common.message.MQObject;
 import com.wanggan.stream.rabbitmq.server.service.IMessageProvider;
 
 /**
@@ -30,7 +31,6 @@ public class MessageController {
     
     @RequestMapping("/msg")
     public void msg(){
-        output.output().send(MessageBuilder.withPayload("hello").build());
-//        messageProvider.send("hello");
+        output.output().send(MessageBuilder.withPayload(new MQObject<String>("hello rabbit")).build());
     }
 }

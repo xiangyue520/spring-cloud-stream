@@ -5,7 +5,7 @@ spring:
         output: #注意此处是output
           destination: rabbitmq
           group: hello
-          binder: my_binder #如果需要更换其他中间件，只需要更换binders下相应的binder或者对应binder下的相关配置即可
+          binder: my_binder #单个channel设置binder
       binders:
         my_binder:
           type: rabbit #中间件类型为rabbitmq
@@ -17,26 +17,6 @@ spring:
                 password: admin
                 port: 5672
                 virtual-host: /
-        #                其他配置
-#        my_binder_kafka: #kafka的配置
-#          type: kafka #中间件类型为kafka
-#          environment:
-#            spring:
-#              cloud:
-#                stream:
-#                  kafka:
-#                    binder:
-#                      zk-nodes: localhost:2181,localhost:2182
-#                      brokers: localhost:9094
-#        #                      其他配置
-#        my_binder_activemq: #activemq的配置
-#          type: activemq #中间件类型为activemq
-#          environment:
-#            spring:
-#              activemq:
-#                broker-url: tcp://localhost:61616
-#                user: admin
-#                password: admin
-##                其他配置
+      default-binder: my_binder #全局设置默认binder
 server:
   port: 8081

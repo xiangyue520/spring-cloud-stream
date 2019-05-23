@@ -7,10 +7,14 @@ spring:
           group: hello
           binder: my_rabbit
       rabbit:
-        input:
-          consumer:
-            auto-bind-dlq: true
-            republish-to-dlq: true
+        bindings:
+          input:
+            consumer:
+              acknowledge-mode: manual
+              auto-bind-dlq: true
+              republish-to-dlq: true
+              deadLetterQueueName: errorChannel
+              deadLetterExchange: dlq
       default-binder: my_rabbit
       binders:
         my_rabbit:
@@ -23,5 +27,6 @@ spring:
                 password: admin
                 port: 5672
                 virtual-host: /
+
 server:
   port: 8080

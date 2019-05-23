@@ -7,9 +7,8 @@ package com.wanggan.stream.activemq.bind;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.jms.Message;
+import javax.jms.*;
 
-import org.apache.activemq.ActiveMQConnectionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.jms.activemq.ActiveMQProperties;
 import org.springframework.cloud.stream.binder.*;
@@ -19,6 +18,8 @@ import org.springframework.integration.core.MessageProducer;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
+import org.springframework.messaging.SubscribableChannel;
+import org.springframework.messaging.support.GenericMessage;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -62,73 +63,39 @@ public class ActiveMQMessageChannelBinder extends AbstractMessageChannelBinder<E
 //     * @return
 //     */
 //    @Override
-//    public Binding<MessageChannel> bindConsumer(String name, String group, MessageChannel inboundBindTarget, ConsumerProperties consumerProperties) {
-//        //todo:实现消息消费
-//        ConnectionFactory connectionFactory = jmsTemplate.getConnectionFactory();
-//        try {
-//            // 创造 JMS 链接
-//            Connection connection = connectionFactory.createConnection();
-//            // 启动连接
-//            connection.start();
-//            // 创建会话 Session
-//            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-//            // 创建消息目的
-//            Destination destination = session.createQueue(name);
-//            // 创建消息消费者
-//            MessageConsumer messageConsumer = session.createConsumer(destination);
-//
-//            messageConsumer.setMessageListener(message -> {
-//                // message 来自于 ActiveMQ
-//                if (message instanceof ObjectMessage) {
-//                    ObjectMessage objectMessage = (ObjectMessage) message;
-//                    try {
-//                        Object object = objectMessage.getObject();
-//                        inboundBindTarget.send(new GenericMessage<Object>(object));
-//                    } catch (JMSException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            });
-//        } catch (JMSException e) {
-//            e.printStackTrace();
-//        }
-//
-//        return () -> {
-//        };
-//    }
-//    /**
-//     * 负责发送消息到 ActiveMQ
-//     * @param name 配置文件中配置的 destination 名称
-//     * @param outboundBindTarget 消息管道
-//     * @param producerProperties
-//     * @return
-//     */
-//    @Override
-//    public Binding<MessageChannel> bindProducer(String name, MessageChannel outboundBindTarget, ProducerProperties producerProperties) {
-//        // MessageChannel 必须是 SubscribableChannel 类型
-//        Assert.isInstanceOf(SubscribableChannel.class, outboundBindTarget,
-//                "Binding is supported only for SubscribableChannel instances");
-//
-//        //强转为 SubscribableChannel类型
-//        SubscribableChannel subscribableChannel = (SubscribableChannel)outboundBindTarget;
-//
-//
-//
-//        subscribableChannel.subscribe(message -> {
-//            /*
-//             *     接收内部管道消息，来自于 MessageChannel#send(message)，实际并没有发送消息，
-//             * 而是此消息将要发送到 ActiveMQ Broker。
-//             *     案例：
-//             *     我们在调用 UserServiceClientController#saveUserByActiveMQStreamBinder() 方法时，
-//             * 会通过 messageChannel.send(message) 向 ActiveMQ 发送消息，而这里先拦截到该消息，再由
-//             * 这里转发至 ActiveMQ
-//             */
-//            Object messageBody = message.getPayload();
-//            jmsTemplate.convertAndSend(name, messageBody);
-//        });
-//        return () -> System.out.println("Unbind");
-//    }
-    
+    public Binding<MessageChannel> bindConsumer(String name, String group, MessageChannel inboundBindTarget, ConsumerProperties consumerProperties) {
+        //todo:实现消息消费
+        ConnectionFactory connectionFactory = jmsTemplate.getConnectionFactory();
+        try {
+            // 创造 JMS 链接
+            Connection connection = connectionFactory.createConnection();
+            // 启动连接
+            connection.start();
+            // 创建会话 Session
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            // 创建消息目的
+            Destination destination = session.createQueue(name);
+            // 创建消息消费者
+            MessageConsumer messageConsumer = session.createConsumer(destination);
+
+            messageConsumer.setMessageListener(message -> {
+                // message 来自于 ActiveMQ
+                if (message instanceof ObjectMessage) {
+                    ObjectMessage objectMessage = (ObjectMessage) message;
+                    try {
+                        Object object = objectMessage.getObject();
+                        inboundBindTarget.send(new GenericMessage<Object>(object));
+                    } catch (JMSException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        } catch (JMSException e) {
+            e.printStackTrace();
+        }
+
+        return () -> { };
+    }
     
     @Override
     protected MessageHandler createProducerMessageHandler(ProducerDestination destination, ExtendedProducerProperties<ActiveMQProducerProperties> producerProperties, MessageChannel errorChannel) throws Exception {
@@ -142,16 +109,19 @@ public class ActiveMQMessageChannelBinder extends AbstractMessageChannelBinder<E
             String producerGroup = StringUtils.isEmpty(extendedProducerGroup)
                     ? destination.getName()
                     : extendedProducerGroup;
-            ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(activeMQBinderConfigurationProperties.getBrokerUrl());
-            
-            
-            //判断是否开启事务,如果有,则开启事务消息,否则关闭
-            jmsTemplate.setSessionTransacted(producer.getTransactional());
-            //设置持久化
-            jmsTemplate.setDeliveryMode(producer.getDeliveryMode());
-            //发送消息
-            jmsTemplate.convertAndSend(des, errorChannel);
-            return null;
+            //MessageChannel 必须是 SubscribableChannel 类型
+            Assert.isInstanceOf(SubscribableChannel.class, errorChannel, "Binding is supported only for SubscribableChannel instances");
+            //强转为 SubscribableChannel类型
+            SubscribableChannel subscribableChannel = (SubscribableChannel)errorChannel;
+            ((SubscribableChannel) errorChannel).subscribe(message -> {
+                //判断是否开启事务,如果有,则开启事务消息,否则关闭
+                jmsTemplate.setSessionTransacted(producer.getTransactional());
+                //设置持久化
+                jmsTemplate.setDeliveryMode(producer.getDeliveryMode());
+                //发送消息
+                jmsTemplate.convertAndSend(des, errorChannel);
+            });
+            return (message) -> System.out.println("Unbind");
         }else {
             throw new RuntimeException("Binding for channel"+destination.getName()+"has been disabled,message can't be deliverd");
         }
@@ -162,9 +132,39 @@ public class ActiveMQMessageChannelBinder extends AbstractMessageChannelBinder<E
     protected MessageProducer createConsumerEndpoint(ConsumerDestination destination, String group, ExtendedConsumerProperties<ActiveMQConsumerProperties> properties) throws Exception {
         ActiveMQConsumerProperties consumerProperties = properties.getExtension();
         if(consumerProperties.getEnabled()){
-            Message msg = jmsTemplate.receive(destination.getName());
-            System.out.println("res msg ="+msg.getBody(String.class));
             
+            jmsTemplate.setPubSubDomain(consumerProperties.isPubSubDomain());
+            ConnectionFactory connectionFactory = jmsTemplate.getConnectionFactory();
+            try {
+                // 创造 JMS 链接
+                Connection connection = connectionFactory.createConnection();
+                // 启动连接
+                connection.start();
+                int acknowledgeMode = consumerProperties.getAcknowledgeMode();
+                boolean transacted = consumerProperties.isTransacted();
+                // 创建会话 Session
+                Session session = connection.createSession(transacted, acknowledgeMode);
+                // 创建消息目的
+                Destination des = session.createQueue(destination.getName());
+                // 创建消息消费者
+                MessageConsumer messageConsumer = session.createConsumer(des);
+        
+                messageConsumer.setMessageListener(message -> {
+                    // message 来自于 ActiveMQ
+                    if (message instanceof ObjectMessage) {
+                        ObjectMessage objectMessage = (ObjectMessage) message;
+                        try {
+                            Object object = objectMessage.getObject();
+                            System.out.println("object message:"+object);
+                        } catch (JMSException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    System.out.println("activemq message:"+message);
+                });
+            } catch (JMSException e) {
+                e.printStackTrace();
+            }
             return null;
         }else{
             throw new RuntimeException(" Customer Binding for channel"+destination.getName()+"has been disabled,message can't be deliverd");
